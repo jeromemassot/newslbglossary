@@ -108,15 +108,36 @@ def rank_context_from_query(query_text:str, tokenizer, model):
     return set(terms), set(keywords), ranked_context
 
 
-def generate_answer(query_text:str, context:str):
+def generate_answer(query_text:str, context:str, open_domain:bool=False):
     """
     :param query_text: input query in plain human language
     :param context: text context
+    :param open_domain: authorize open-domain knowledge if True
     :return: answer text
     """
 
     short_context = ' '.join(context[:3500])
-    prompt = f"Answer the following question : \"{query_text}\" from this following context : \"{short_context}\""
+    if open_domain:
+        prompt = f"""
+            Answer the question based on the context below. Indicate the confidence about the answer.
+        
+            Context: {short_context}
+
+            Question: {query_text}
+
+            Answer:
+        """
+    else:
+        prompt = f"""
+            Answer the question based on the context below. If the question cannot be answered using
+            the information provided  answer 'None'.
+        
+            Context: {short_context}
+
+            Question: {query_text}
+
+            Answer:
+        """
 
     # openai API query
     response = openai.Completion.create(
@@ -138,18 +159,31 @@ st.title("chatGPT engined Q&A based on the SLB.com technical glossary")
 query_text = st.text_input(label="Query")
 
 search = st.button(label='Find an anwser from SLB glossary')
+open_domain = st.checkbox("Authorize open-domain knowledge", value=False)
 
 if search:
     terms, keywords, context = rank_context_from_query(
         query_text, st.session_state['tokenizer'], st.session_state['model']
     )
+
+    # first try a closed domain answer
     answer = generate_answer(query_text, context)
 
-    st.write("I have found information from the SLB glossary and I can propose this answer:\n")
-    st.markdown(answer)
+    if answer.lstrip().rstrip().strip() != "None":
+        st.write("I have found information from the SLB glossary and I can propose this answer:\n")
+        st.markdown(answer)
+        st.multiselect('I have found this anwser from these glossary contents:', options=sorted(terms), default=sorted(terms))
+        st.multiselect('You can also be interested by:', options=sorted(keywords), default=sorted(keywords))
+    
+    # second try an open domain answer if allowed
+    elif open_domain:
+        answer = generate_answer(query_text, context, True)
+        st.write("I have found information outside the SLB glossary. Please use it with caution:\n")
+        st.markdown(answer)
 
-    st.multiselect('I have found this anwser from these glossary contents:', options=sorted(terms), default=sorted(terms))
-
-    st.multiselect('You can also be interested by:', options=sorted(keywords), default=sorted(keywords))
-
-
+    # else indicate that no information has been found in the context
+    else:
+        st.write("""
+            This question is unrelated to the context provided and cannot be 
+            answered based on the information given."""
+        )
