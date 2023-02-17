@@ -3,8 +3,12 @@ from sentence_transformers import SentenceTransformer
 from transformers import BertTokenizerFast
 
 import streamlit as st
+from PIL import Image
 import openai
 
+
+########################################################################################################################
+## Setup methods
 
 def setup():
     """
@@ -34,8 +38,13 @@ def load_model():
     st.session_state['model'] = SentenceTransformer('multi-qa-MiniLM-L6-cos-v1')
 
 
+########################################################################################################################
 ## App Interface
+
 st.title("chatGPT engined Q&A based on the SLB.com technical glossary")
+
+logo_slb = Image.open('./decorations/logos.png')
+st.image(logo_slb, width=300)
 
 st.warning("Setup and model loading can take a few seconds...")
 
@@ -52,6 +61,7 @@ query_text = st.text_input(label="Query")
 # Search button and open-domain checkbox
 search = st.button(label='Find an anwser from SLB glossary')
 open_domain = st.checkbox("Authorize open-domain knowledge", value=False)
+st.warning("Open-domain knowledge is not always relevant. Please use it with caution..")
 
 if search:
     terms, keywords, context = rank_context_from_query(
