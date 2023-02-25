@@ -3,7 +3,6 @@ from sentence_transformers import SentenceTransformer
 from transformers import BertTokenizerFast
 
 import streamlit as st
-from PIL import Image
 import openai
 
 
@@ -42,9 +41,6 @@ def load_model():
 ## App Interface
 
 st.title("chatGPT engined Q&A based on the SLB.com technical glossary")
-
-logo_slb = Image.open('./decorations/logos.png')
-st.image(logo_slb, width=300)
 
 st.warning("Setup and model loading can take a few seconds...")
 
