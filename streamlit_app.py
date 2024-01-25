@@ -2,6 +2,7 @@ from utils import rank_context_from_query, generate_answer
 from sentence_transformers import SentenceTransformer
 from transformers import BertTokenizerFast
 
+from pinecone import Pinecone
 import streamlit as st
 import openai
 
@@ -18,8 +19,12 @@ def setup():
         openai.api_key = st.secrets['OPENAI_API_KEY']
 
     if not 'PINE_API_KEY' in st.session_state.keys():
-        st.session_state['index_api_key'] = st.secrets['PINE_API_KEY']
-
+        st.session_state['PINE_API_KEY'] = st.secrets['PINE_API_KEY']
+        st.session_state['INDEX_NAME'] = st.secrets['INDEX_NAME']
+        pc = Pinecone(api_key=st.session_state['PINE_API_KEY'])
+        index = pc.Index(st.session_state['INDEX_NAME'])
+        st.session_state['index'] = index
+    
 
 def load_tokenizer():
     """
@@ -61,7 +66,7 @@ st.warning("Open-domain knowledge is not always relevant. Please use it with cau
 
 if search:
     terms, keywords, context = rank_context_from_query(
-        query_text, st.session_state['tokenizer'], st.session_state['model']
+        query_text, st.session_state['tokenizer'], st.session_state['model'], st.session_state['index']
     )
 
     # first try a closed domain answer
