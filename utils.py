@@ -41,32 +41,42 @@ def generate_sparse_query(query_text, tokenizer)                     :
     return sparse_embeddings
 
 
-def rank_context_from_query(query_text:str, tokenizer, model):
+def rank_context_from_query(query_text:str, tokenizer, model, index):
     """
     Rank the contexts needed to answer the query
     :param query_text: input query in plain human language
     :param tokenizer: tokenizer for tokernizing the query text
     :param model: language model for embedding the query text
+    :param index: pinecone index object
     :return: terms, keywords and context as set, set and string objects
     """
 
-    sparse_vector = generate_sparse_query(query_text, tokenizer)
+    # not used as today
+    #sparse_vector = generate_sparse_query(query_text, tokenizer)
     dense_vector = model.encode([query_text], normalize_embeddings=True).tolist()[0]
 
     # Re-weight queries vectors for hybrid search
-    hdense, hsparse = hybrid_score_norm(dense_vector, sparse_vector, alpha=1)
+    #hdense, hsparse = hybrid_score_norm(dense_vector, sparse_vector, alpha=1)
 
-    query = {
-        "topK": 5,
-        "vector": hdense,
-        "sparseVector": hsparse,
-        "includeMetadata": True
-    }
+    #query = {
+    #    "topK": 5,
+    #    "vector": hdense,
+    #    "sparseVector": hsparse,
+    #    "includeMetadata": True
+    #}
 
-    headers = {"Api-Key": st.session_state['index_api_key']}
+    #headers = {"Api-Key": st.session_state['index_api_key']}
 
-    index_url = 'https://hybrid-slb-glossary-057f5e2.svc.us-west1-gcp.pinecone.io'
-    resp = requests.post(index_url + '/query', json=query, headers=headers)
+    #index_url = 'https://hybrid-slb-glossary-057f5e2.svc.us-west1-gcp.pinecone.io'
+    #resp = requests.post(index_url + '/query', json=query, headers=headers)
+
+    resp = index.query(
+        namespace="ns1",
+        vector=dense_vector,
+        top_k=5,
+        include_values=True,
+        include_metadata=True
+    )
 
     # placeholders for the returned data
     ranked_context = ''
